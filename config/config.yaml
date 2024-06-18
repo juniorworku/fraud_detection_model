@@ -1,0 +1,7 @@
+settings:
+  data_path: "data/"
+  raw_data_path: "data/raw/"
+  processed_data_path: "data/processed/"
+  model_path: "models/"
+  log_path: "logs/project.log"
+  report_path: "reports/"

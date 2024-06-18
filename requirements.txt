@@ -1,0 +1,14 @@
+pandas
+numpy
+scikit-learn
+xgboost
+lightgbm
+matplotlib
+seaborn
+jupyter
+shap
+lime
+flask
+mlflow
+docker
+pytest
