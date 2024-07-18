@@ -1,28 +1,23 @@
+# Refactored data_processing.py
+
 import pandas as pd
-import os
+from sklearn.preprocessing import StandardScaler
 
-# Load data
-def load_data(file_path):
-    return pd.read_csv(file_path)
+class DataProcessing:
+    def __init__(self, file_path):
+        self.data = self.load_data(file_path)
 
-# Save data
-def save_data(df, file_path):
-    df.to_csv(file_path, index=False)
+    def load_data(self, file_path):
+        return pd.read_csv(file_path)
 
-# Example function to process data
-def process_data(df):
-    # Add your data processing steps here
-    return df
+    def preprocess_data(self):
+        # Handle missing values
+        self.data = self.data.dropna()
+        # Encode categorical features
+        self.data = pd.get_dummies(self.data)
+        return self.data
 
-if __name__ == "__main__":
-    raw_data_path = "data/raw/Fraud_Data.csv"
-    processed_data_path = "data/processed/Fraud_Data_processed.csv"
-
-    # Load raw data
-    df = load_data(raw_data_path)
-    
-    # Process data
-    df_processed = process_data(df)
-    
-    # Save processed data
-    save_data(df_processed, processed_data_path)
+    def scale_features(self, columns):
+        scaler = StandardScaler()
+        self.data[columns] = scaler.fit_transform(self.data[columns])
+        return self.data
