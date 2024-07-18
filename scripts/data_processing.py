@@ -21,3 +21,11 @@ class DataProcessing:
         scaler = StandardScaler()
         self.data[columns] = scaler.fit_transform(self.data[columns])
         return self.data
+    def add_geolocation_features(self, ip_to_country_df):
+        self.data['ip_int'] = self.data['ip_address'].apply(self.ip_to_int)
+        self.data = pd.merge(self.data, ip_to_country_df, how='left', left_on='ip_int', right_on='lower_bound_ip_address')
+        return self.data
+
+    def ip_to_int(self, ip):
+        o = list(map(int, ip.split('.')))
+        return (16777216 * o[0]) + (65536 * o[1]) + (256 * o[2]) + o[3]
