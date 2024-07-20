@@ -4,9 +4,9 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 import ipaddress
 
 def load_datasets():
-    fraud_data = pd.read_csv('Fraud_Data.csv')
-    ip_country = pd.read_csv('IpAddress_to_Country.csv')
-    credit_card = pd.read_csv('creditcard.csv')
+    fraud_data = pd.read_csv('data/raw/Fraud_Data.csv')
+    ip_country = pd.read_csv('data/raw/IpAddress_to_Country.csv')
+    credit_card = pd.read_csv('data/raw/creditcard.csv')
     return fraud_data, ip_country, credit_card
 
 def handle_missing_values(df):
@@ -57,8 +57,8 @@ def main():
     fraud_data = feature_engineering(fraud_data)
     fraud_data, credit_card = normalize_and_scale(fraud_data, credit_card)
     fraud_data = encode_categorical_features(fraud_data)
-    fraud_data.to_csv('processed_fraud_data.csv', index=False)
-    credit_card.to_csv('processed_credit_card.csv', index=False)
+    fraud_data.to_csv('../data/processed/processed_fraud_data.csv', index=False)
+    credit_card.to_csv('../data/processed/processed_credit_card.csv', index=False)
 
 if __name__ == "__main__":
     main()
