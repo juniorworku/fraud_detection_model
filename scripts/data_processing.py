@@ -1,31 +1,64 @@
-# Refactored data_processing.py
-
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
+import numpy as np
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+import ipaddress
 
-class DataProcessing:
-    def __init__(self, file_path):
-        self.data = self.load_data(file_path)
+def load_datasets():
+    fraud_data = pd.read_csv('data/raw/Fraud_Data.csv')
+    ip_country = pd.read_csv('data/raw/IpAddress_to_Country.csv')
+    credit_card = pd.read_csv('data/raw/creditcard.csv')
+    return fraud_data, ip_country, credit_card
 
-    def load_data(self, file_path):
-        return pd.read_csv(file_path)
+def handle_missing_values(df):
+    return df.dropna()
 
-    def preprocess_data(self):
-        # Handle missing values
-        self.data = self.data.dropna()
-        # Encode categorical features
-        self.data = pd.get_dummies(self.data)
-        return self.data
+def clean_data(df):
+    df.drop_duplicates(inplace=True)
+    return df
 
-    def scale_features(self, columns):
-        scaler = StandardScaler()
-        self.data[columns] = scaler.fit_transform(self.data[columns])
-        return self.data
-    def add_geolocation_features(self, ip_to_country_df):
-        self.data['ip_int'] = self.data['ip_address'].apply(self.ip_to_int)
-        self.data = pd.merge(self.data, ip_to_country_df, how='left', left_on='ip_int', right_on='lower_bound_ip_address')
-        return self.data
+def convert_ip_to_int(df, columns):
+    for col in columns:
+        df[col] = df[col].apply(lambda x: int(ipaddress.ip_address(x)))
+    return df
 
-    def ip_to_int(self, ip):
-        o = list(map(int, ip.split('.')))
-        return (16777216 * o[0]) + (65536 * o[1]) + (256 * o[2]) + o[3]
+def merge_datasets(fraud_data, ip_country):
+    return pd.merge(fraud_data, ip_country, how='left', left_on='ip_address', right_on='lower_bound_ip_address')
+
+def feature_engineering(fraud_data):
+    fraud_data['transaction_frequency'] = fraud_data.groupby('user_id')['purchase_time'].transform('count')
+    fraud_data['purchase_time'] = pd.to_datetime(fraud_data['purchase_time'])
+    fraud_data['hour_of_day'] = fraud_data['purchase_time'].dt.hour
+    fraud_data['day_of_week'] = fraud_data['purchase_time'].dt.dayofweek
+    return fraud_data
+
+def normalize_and_scale(fraud_data, credit_card):
+    scaler = StandardScaler()
+    fraud_data[['purchase_value', 'transaction_frequency']] = scaler.fit_transform(fraud_data[['purchase_value', 'transaction_frequency']])
+    credit_card['Amount'] = scaler.fit_transform(credit_card[['Amount']])
+    return fraud_data, credit_card
+
+def encode_categorical_features(fraud_data):
+    encoder = OneHotEncoder()
+    categorical_features = ['source', 'browser', 'sex', 'country']
+    encoded_features = encoder.fit_transform(fraud_data[categorical_features])
+    fraud_data = fraud_data.drop(columns=categorical_features)
+    fraud_data = pd.concat([fraud_data, pd.DataFrame(encoded_features.toarray())], axis=1)
+    return fraud_data
+
+def main():
+    fraud_data, ip_country, credit_card = load_datasets()
+    fraud_data = handle_missing_values(fraud_data)
+    credit_card = handle_missing_values(credit_card)
+    fraud_data = clean_data(fraud_data)
+    credit_card = clean_data(credit_card)
+    ip_country = convert_ip_to_int(ip_country, ['lower_bound_ip_address', 'upper_bound_ip_address'])
+    fraud_data = convert_ip_to_int(fraud_data, ['ip_address'])
+    fraud_data = merge_datasets(fraud_data, ip_country)
+    fraud_data = feature_engineering(fraud_data)
+    fraud_data, credit_card = normalize_and_scale(fraud_data, credit_card)
+    fraud_data = encode_categorical_features(fraud_data)
+    fraud_data.to_csv('../data/processed/processed_fraud_data.csv', index=False)
+    credit_card.to_csv('../data/processed/processed_credit_card.csv', index=False)
+
+if __name__ == "__main__":
+    main()
